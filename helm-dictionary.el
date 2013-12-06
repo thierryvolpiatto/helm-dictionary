@@ -116,7 +116,7 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'cl))
+(require 'cl-lib)
 (require 'helm)
 (require 'browse-url)
 
@@ -196,22 +196,22 @@ values that are admissible for the `browse-url-browser-function'."
 
 (defun helm-dictionary-transformer (candidates)
   "Formats entries retrieved from the data base."
-  (loop with width = (with-helm-window (window-width))
-        for i in candidates
-        for headerp = (string-match "\\`#" i)
-        for entry = (and (not headerp) (split-string i " :: "))
-        for l1terms = (and entry (split-string (car entry) " | "))
-        for l2terms = (helm-aif (cdr entry) (split-string (car it) " | "))
-        unless headerp append
-        (loop for l1term in l1terms
-              for l2term in l2terms
-              collect
-              (cons 
-                (concat
-                  (truncate-string-to-width l1term (- (/ width 2) 1) 0 ?\s)
-                  " "
-                  (truncate-string-to-width l2term (- (/ width 2) 1) 0 ?\s))
-                (cons l1term l2term)))))
+  (cl-loop with width = (with-helm-window (window-width))
+           for i in candidates
+           for headerp = (string-match "\\`#" i)
+           for entry = (and (not headerp) (split-string i " :: "))
+           for l1terms = (and entry (split-string (car entry) " | "))
+           for l2terms = (helm-aif (cdr entry) (split-string (car it) " | "))
+           unless headerp append
+           (loop for l1term in l1terms
+                 for l2term in l2terms
+                 collect
+                 (cons 
+                  (concat
+                   (truncate-string-to-width l1term (- (/ width 2) 1) 0 ?\s)
+                   " "
+                   (truncate-string-to-width l2term (- (/ width 2) 1) 0 ?\s))
+                  (cons l1term l2term)))))
 
 
 (defun helm-dictionary-insert-l1term (entry)
