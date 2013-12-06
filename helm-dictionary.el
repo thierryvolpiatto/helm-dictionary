@@ -234,10 +234,10 @@ values that are admissible for the `browse-url-browser-function'."
                ("Insert translation term" . helm-dictionary-insert-l2term)))))
 
 (defvar helm-source-dictionary-online
-  `((name . "Lookup online")
+  '((name . "Lookup online")
     (match . (lambda (_candidate) t))
     (candidates . helm-dictionary-online-dicts)
-    (nohighlight)
+    (no-matchplugin)
     (action
      . (lambda (cand)
          (let ((browse-url-browser-function
