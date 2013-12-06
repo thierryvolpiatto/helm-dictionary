@@ -194,46 +194,17 @@ values that are admissible for the `browse-url-browser-function'."
 )
 
 
-(defun helm-dictionary-init ()
-  "Initialize async grep process for `helm-source-dictionary'."
-  (let ((process-connection-type nil)
-        (cmd (format "grep %s '%s' %s | grep -v '^#'"
-                     (if helm-dictionary-ignore-case "-i" "")
-                     (replace-regexp-in-string "\\\\$" "" helm-pattern)
-                     helm-dictionary-database)))
-    (prog1
-      (start-process-shell-command "helm-dictionary" helm-buffer cmd)
-      (set-process-sentinel
-        (get-buffer-process helm-buffer)
-        #'(lambda (process event)
-            (if (string= event "finished\n")
-                (with-helm-window
-                  (setq mode-line-format
-                        '(" " mode-line-buffer-identification " "
-                          (line-number-mode "%l") " "
-                          (:eval (propertize
-                                  (format "[Grep Process Finish- (%s results)]"
-                                          (max (1- (count-lines
-                                                    (point-min) (point-max))) 0))
-                                  'face 'helm-grep-finish))))
-                  (force-mode-line-update))
-                (helm-log "Error: Egrep %s"
-                          (replace-regexp-in-string "\n" "" event))))))))
-
-
 (defun helm-dictionary-transformer (candidates)
   "Formats entries retrieved from the data base."
-  (loop for i in candidates
-        for entry = (split-string i " :: ")
-        for l1terms = (split-string (car entry) " | ")
-        for l2terms = (split-string (cadr entry) " | ")
-        for filtered-helm-pattern = (replace-regexp-in-string "\\\\$" "" helm-pattern)
-        for width = (save-excursion (with-helm-window (window-width)))
-        append
+  (loop with width = (with-helm-window (window-width))
+        for i in candidates
+        for headerp = (string-match "\\`#" i)
+        for entry = (and (not headerp) (split-string i " :: "))
+        for l1terms = (and entry (split-string (car entry) " | "))
+        for l2terms = (helm-aif (cdr entry) (split-string (car it) " | "))
+        unless headerp append
         (loop for l1term in l1terms
               for l2term in l2terms
-              if (or (string-match filtered-helm-pattern l1term)
-                     (string-match filtered-helm-pattern l2term))
               collect
               (cons 
                 (concat
@@ -256,33 +227,32 @@ values that are admissible for the `browse-url-browser-function'."
 
 (defvar helm-source-dictionary
   '((name . "Search dictionary")
-    (candidates-process . helm-dictionary-init)
     (candidate-transformer . helm-dictionary-transformer)
-    (delayed)
-    (nohighlight)
-    (no-matchplugin)
-    (action . (("Insert source language term" . helm-dictionary-insert-l1term)
-               ("Insert target language term" . helm-dictionary-insert-l2term)))))
+    (pattern-transformer . (lambda (pattern) (downcase pattern)))
+    (candidates-file . helm-dictionary-database)
+    (action . (("Insert initial term"  . helm-dictionary-insert-l1term)
+               ("Insert translation term" . helm-dictionary-insert-l2term)))))
 
 (defvar helm-source-dictionary-online
   `((name . "Lookup online")
-    (dummy)
+    (match . (lambda (_candidate) t))
+    (candidates . helm-dictionary-online-dicts)
     (nohighlight)
-    (filtered-candidate-transformer
-     . (lambda (_cands _source) helm-dictionary-online-dicts))
     (action
      . (lambda (cand)
          (let ((browse-url-browser-function
-                 (or helm-dictionary-browser-function
-                     browse-url-browser-function)))
+                (or helm-dictionary-browser-function
+                    browse-url-browser-function)))
            (helm-browse-url (format cand (url-hexify-string helm-pattern)))))))
   "Source for online lookup.")
 
 ;;;###autoload
-(defun helm-dictionary ()
-  (interactive)
+(defun helm-dictionary (arg)
+  (interactive "P")
   (helm :sources '(helm-source-dictionary helm-source-dictionary-online)
         :full-frame t
+        :default (word-at-point)
+        :input (and arg (word-at-point)) 
         :candidate-number-limit 500
         :buffer "*helm dictionary*"))
 
