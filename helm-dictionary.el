@@ -204,14 +204,14 @@ values that are admissible for the `browse-url-browser-function'."
            for l2terms = (helm-aif (cdr entry) (split-string (car it) " | "))
            unless headerp append
            (cl-loop for l1term in l1terms
-                 for l2term in l2terms
-                 collect
-                 (cons 
-                  (concat
-                   (truncate-string-to-width l1term (- (/ width 2) 1) 0 ?\s)
-                   " "
-                   (truncate-string-to-width l2term (- (/ width 2) 1) 0 ?\s))
-                  (cons l1term l2term)))))
+                    for l2term in l2terms
+                    collect
+                    (cons 
+                     (concat
+                      (truncate-string-to-width l1term (- (/ width 2) 1) 0 ?\s)
+                      " "
+                      (truncate-string-to-width l2term (- (/ width 2) 1) 0 ?\s))
+                     (cons l1term l2term)))))
 
 
 (defun helm-dictionary-insert-l1term (entry)
