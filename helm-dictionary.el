@@ -203,7 +203,7 @@ values that are admissible for the `browse-url-browser-function'."
            for l1terms = (and entry (split-string (car entry) " | "))
            for l2terms = (helm-aif (cdr entry) (split-string (car it) " | "))
            unless headerp append
-           (loop for l1term in l1terms
+           (cl-loop for l1term in l1terms
                  for l2term in l2terms
                  collect
                  (cons 
